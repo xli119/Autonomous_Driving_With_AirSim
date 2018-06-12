@@ -62,9 +62,9 @@ while (True):
     car_collision = client.getCollisionInfo()
 
     car_controls.brake = 0
-    if (car_state.speed < 3.5):
+    if (car_state.speed < 3.0):
         car_controls.throttle = 0.6
-    elif (car_state.speed > 5.0):
+    elif (car_state.speed > 4.0):
         car_controls.brake = 1.0
 
 
