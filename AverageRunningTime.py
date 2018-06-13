@@ -76,10 +76,20 @@ while (True):
         end_time = time.time()
         time1 = end_time - start_time
         start_time = time.time()
-        time_list.append(time1)
+        if time1 > 5:
+            time_list.append(time1)
         time.sleep(1.5)
         client.reset()
         time.sleep(1)
+
+        if end_time - time0 > 60:
+            sum = 0
+            for t in time_list:
+                sum += t
+            print("Average Running Time:", sum / len(time_list))
+            print(time_list)
+            break
+            sys.stdout.flush()
 
 
 
@@ -93,14 +103,6 @@ while (True):
     car_controls.steering = round(0.4 * float(model_output[0][0]), 2)
 
     print('Sending steering = {0}, throttle = {1}'.format(car_controls.steering, car_controls.throttle))
-    print(round(1), end_time-time0)
-    if end_time-time0 > 40:
-        sum = 0
-        for t in time_list:
-            sum += t
-        print("Average Running Time:", sum/len(time_list))
-        print(time_list)
-        break
-        sys.stdout.flush()
+
 
     client.setCarControls(car_controls)
