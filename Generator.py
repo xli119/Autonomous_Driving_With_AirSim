@@ -160,9 +160,9 @@ class DriveDataGenerator(image.ImageDataGenerator):
             x = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
 
         if self.darken_range != 0 and self.darken_percentage != 0:
-            r = np.random.rand()
+            r = np.random.uniform(low=0.0, high=1.0)
             if r < self.darken_percentage:
-                random_dark = np.random.uniform(low=1.0-self.darken_range, high=0.8)
+                random_dark = np.random.uniform(low=1.0-self.darken_range, high=0.7)
 
                 img = cv2.cvtColor(x, cv2.COLOR_RGB2HSV)
                 img[:, :, 2] = np.clip(img[:, :, 2] * random_dark, 0, 255)
