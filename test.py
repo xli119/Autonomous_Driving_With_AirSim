@@ -3,11 +3,15 @@ import sys
 import numpy as np
 import glob
 import os
+import cv2
 import tensorflow as tf
 if (r'E:\endtoend\PythonClient' not in sys.path):
     sys.path.insert(0, r'E:\endtoend\PythonClient')
 from AirSimClient import *
 
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config=config)
 # << Set this to the path of the model >>
 # If None, then the model with the lowest validation loss from training will be used
 MODEL_PATH = None
@@ -46,6 +50,43 @@ def get_image():
 
     return image_rgba[76:135, 0:255, 0:3].astype(float)
 
+def deshadow(ori):
+    y_cb_cr_img = cv2.cvtColor(ori, cv2.COLOR_BGR2YCrCb)
+    binary_mask = np.copy(y_cb_cr_img)
+    y_mean = np.mean(cv2.split(y_cb_cr_img)[0])
+    y_std = np.std(cv2.split(y_cb_cr_img)[0])
+    for i in range(y_cb_cr_img.shape[0]):
+        for j in range(y_cb_cr_img.shape[1]):
+            if y_cb_cr_img[i, j, 0] < y_mean - (y_std / 3):
+                binary_mask[i, j] = [255, 255, 255]
+            else:
+                binary_mask[i, j] = [0, 0, 0]
+    kernel = np.ones((3, 3), np.uint8)
+    erosion = cv2.erode(binary_mask, kernel, iterations=1)
+    spi_la = 0
+    spi_s = 0
+    n_la = 0
+    n_s = 0
+    for i in range(y_cb_cr_img.shape[0]):
+        for j in range(y_cb_cr_img.shape[1]):
+            if erosion[i, j, 0] == 0 and erosion[i, j, 1] == 0 and erosion[i, j, 2] == 0:
+                spi_la = spi_la + y_cb_cr_img[i, j, 0]
+                n_la += 1
+            else:
+                spi_s = spi_s + y_cb_cr_img[i, j, 0]
+                n_s += 1
+    average_ld = spi_la / n_la
+    average_le = spi_s / n_s
+    i_diff = average_ld - average_le
+    ratio_as_al = average_ld / average_le
+    for i in range(y_cb_cr_img.shape[0]):
+        for j in range(y_cb_cr_img.shape[1]):
+            if erosion[i, j, 0] == 255 and erosion[i, j, 1] == 255 and erosion[i, j, 2] == 255:
+                y_cb_cr_img[i, j] = [y_cb_cr_img[i, j, 0] + i_diff, y_cb_cr_img[i, j, 1] + ratio_as_al,
+                                     y_cb_cr_img[i, j, 2] + ratio_as_al]
+    image = cv2.cvtColor(y_cb_cr_img, cv2.COLOR_YCR_CB2BGR)
+    return image
+
 
 while (True):
     client.enableApiControl(True)
@@ -61,7 +102,9 @@ while (True):
     else:
         car_controls.throttle = 0.0
     successRate = round((successCount/count)*100,2)
-    image_buf[0] = get_image()
+    imagetemp = get_image()
+
+    image_buf[0] = imagetemp
     state_buf[0] = np.array([car_controls.steering, car_controls.throttle, car_controls.brake, car_state.speed])
     model_output = model.predict([image_buf, state_buf])
     car_controls.steering = round(0.5 * float(model_output[0][0]), 2)
