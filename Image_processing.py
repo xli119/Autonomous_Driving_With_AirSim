@@ -54,8 +54,19 @@ def timage():
         image_contrasted.save(opfile + filterame + '.png')
 
 
-
-
 if __name__ == '__main__':
     timage()
-
+'''
+## 写给老梁：
+加入testmodel
+NO.5 cell:
+def get_image():
+    image_response = client.simGetImages([ImageRequest(0, AirSimImageType.Scene, False, False)])[0]
+    image1d = np.fromstring(image_response.image_data_uint8, dtype=np.uint8)
+    image_rgba = image1d.reshape(image_response.height, image_response.width, 4)
+    
+    contrast = 2.0
+    image_rgba = ImageEnhance.Contrast(image_rgba).enhance(contrast)
+    
+    return image_rgba[76:135,0:255,0:3].astype(float)
+'''
