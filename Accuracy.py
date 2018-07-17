@@ -11,7 +11,7 @@ config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
 
 
-test_dataset = h5py.File('D:\EndToEndLearningRawData\data_cooked_nh/test.h5', 'r')
+test_dataset = h5py.File('D:\EndToEndLearningRawData\data_cooked_f/test.h5', 'r')
 
 num_test_example = test_dataset['image'].shape[0]
 print(test_dataset['previous_state'].shape)
@@ -25,7 +25,7 @@ from AirSimClient import *
 MODEL_PATH = None
 
 if (MODEL_PATH == None):
-    models = glob.glob('D:/EndToEndLearningRawData/model_final_nh/nROI60140Drop=0.0_bright=0.9/models/*.h5')
+    models = glob.glob('D:/EndToEndLearningRawData/model_final_nh/nROI60140Drop=0.0_bright=0.4/models/*.h5')
     best_model = max(models, key=os.path.getctime)
     MODEL_PATH = best_model
 
@@ -36,7 +36,9 @@ model = load_model(MODEL_PATH)
 image_buf = np.zeros((1, 80, 255, 3))
 state_buf = np.zeros((1,4))
 
-for i in range(num_test_example):
+sum = 0
+
+for i in range(num_test_example-1):
     current_image = test_dataset['image'][i]
     # image1d = np.fromstring(current_image.image_data_uint8, dtype=np.uint8)
     # image_rgba = current_image.reshape(current_image.height, current_image.width, 4)
@@ -47,6 +49,22 @@ for i in range(num_test_example):
     model_output = model.predict([image_buf, state_buf])
     #print(test_dataset['label'][i], test_dataset['previous_state'][i][0])
     #print("steering_true:", test_dataset['label'][i], 'steering_pred:', model_output[0][0])
-    print("steering_true:", test_dataset['previous_state'][i+1][0], 'steering_pred:', model_output[0][0])
+    print("steering_true:", test_dataset['label'][i+1][0], 'steering_pred:', model_output[0][0])
+    if model_output[0][0] > 1:
+        s_pred = 1
+    elif model_output[0][0] < -1:
+        s_pred = -1
+    else:
+        s_pred = model_output[0][0]
+    s_true = test_dataset['label'][i+1][0]
+    loss = abs(s_true-s_pred)/2
+    sum += loss
+
+
+error_rate = sum/(num_test_example-1)
+
+print(error_rate)
+
+
 
 
